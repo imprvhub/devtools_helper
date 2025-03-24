@@ -105,6 +105,22 @@
       font-size: 12px;
     }
     
+    .operation-section {
+      border-left: 2px solid #0095ff;
+      padding-left: 15px;
+      margin-bottom: 20px;
+      margin-top: 10px;
+    }
+    
+    .command-display {
+      background-color: #2d2d2d;
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+    
     .output {
       background-color: #1a1a1a;
       border: 1px solid #444;
@@ -117,15 +133,6 @@
       font-family: monospace;
       color: #0af;
     }
-    
-    .command-display {
-      background-color: #2d2d2d;
-      color: #fff;
-      padding: 10px;
-      border-radius: 4px;
-      margin: 10px 0;
-      font-family: monospace;
-    }
   </style>
 </head>
 <body>
@@ -135,6 +142,7 @@
     <div class="tabs">
       <div class="tab active" data-tab="tree">Tree Command</div>
       <div class="tab" data-tab="fastapi">FastAPI</div>
+      <div class="tab" data-tab="git">Git Commands</div>
     </div>
     
     <div class="tab-content active" id="tree-tab">
@@ -246,12 +254,114 @@
       
       <div class="output" id="fastapi-output"></div>
     </div>
+    
+    <div class="tab-content" id="git-tab">
+      <h2>Git Commands</h2>
+      
+      <div class="form-group">
+        <label>Git Operation:</label>
+        <select id="git-operation">
+          <option value="tag">Create Tag</option>
+          <option value="reset">Hard Reset</option>
+          <option value="push">Push HEAD</option>
+          <option value="switch">Switch/Create Branch</option>
+        </select>
+      </div>
+      
+      <!-- Tag Creation Section -->
+      <div id="tag-section" class="operation-section">
+        <div class="form-group">
+          <label>Tag Name/Version:</label>
+          <input type="text" id="tag-name" placeholder="v1.0.0">
+        </div>
+        
+        <div class="form-group">
+          <label>Commit Hash (leave empty for HEAD):</label>
+          <input type="text" id="tag-hash" placeholder="Optional hash">
+        </div>
+        
+        <div class="form-group">
+          <div>
+            <input type="checkbox" id="push-tag" checked>
+            <label for="push-tag" style="display: inline;">Push tag to origin</label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Hard Reset Section -->
+      <div id="reset-section" class="operation-section" style="display: none;">
+        <div class="form-group">
+          <label>Reset to:</label>
+          <select id="reset-target">
+            <option value="HEAD~1">Previous commit (HEAD~1)</option>
+            <option value="HEAD~2">2 commits back (HEAD~2)</option>
+            <option value="HEAD~3">3 commits back (HEAD~3)</option>
+            <option value="HEAD~5">5 commits back (HEAD~5)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        
+        <div id="custom-reset" style="display: none;">
+          <div class="form-group">
+            <label>Custom Reset Point:</label>
+            <input type="text" id="custom-reset-point" placeholder="HEAD~4 or commit hash">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Push HEAD Section -->
+      <div id="push-section" class="operation-section" style="display: none;">
+        <div class="form-group">
+          <label>Remote (default: origin):</label>
+          <input type="text" id="push-remote" value="origin">
+        </div>
+        
+        <div class="form-group">
+          <div>
+            <input type="checkbox" id="force-push" checked>
+            <label for="force-push" style="display: inline;">Force push (+)</label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Switch Branch Section -->
+      <div id="switch-section" class="operation-section" style="display: none;">
+        <div class="form-group">
+          <label>Operation:</label>
+          <select id="switch-operation">
+            <option value="existing">Switch to Existing Branch</option>
+            <option value="create">Create and Switch to New Branch</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label id="branch-label">Branch Name:</label>
+          <input type="text" id="branch-name" placeholder="main">
+        </div>
+        
+        <div id="create-from" style="display: none;">
+          <div class="form-group">
+            <label>Create From (leave empty for current HEAD):</label>
+            <input type="text" id="create-from-point" placeholder="Optional branch or commit">
+          </div>
+        </div>
+      </div>
+      
+      <div class="command-display" id="git-command-display">git tag -a v1.0.0 -m "Version 1.0.0"</div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button id="copy-git-command">Copy Command</button>
+        <button id="execute-git-command">Execute Command</button>
+      </div>
+      
+      <div class="output" id="git-output"></div>
+    </div>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
     
-    // Tab switching
+    
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -265,7 +375,7 @@
       });
     });
     
-    // Tree command functionality
+    
     const treePathInput = document.getElementById('tree-path');
     const treeExclusions = document.getElementById('tree-exclusions');
     const newExclusionInput = document.getElementById('new-exclusion');
@@ -335,7 +445,7 @@
       input.addEventListener('input', updateTreeCommand);
     });
     
-    // Save and load exclusions
+    
     const DEFAULT_EXCLUSIONS = ['node_modules', '.git', '__pycache__', 'venv', '.vercel', '.astro'];
     
     saveExclusionsBtn.addEventListener('click', () => {
@@ -359,7 +469,7 @@
       localStorage.removeItem('commonExclusions');
     });
     
-    // Load saved exclusions on startup
+    
     try {
       const savedExclusions = localStorage.getItem('commonExclusions');
       if (savedExclusions) {
@@ -383,7 +493,7 @@
       ipcRenderer.send('execute-command', treeCommandDisplay.textContent);
     });
     
-    // FastAPI command functionality
+    
     const apiPathInput = document.getElementById('api-path');
     const mainFileInput = document.getElementById('main-file');
     const appVarInput = document.getElementById('app-var');
@@ -395,6 +505,38 @@
     const executeFastapiCommandBtn = document.getElementById('execute-fastapi-command');
     const fastapiOutput = document.getElementById('fastapi-output');
     
+    
+    const gitOperation = document.getElementById('git-operation');
+    const tagSection = document.getElementById('tag-section');
+    const resetSection = document.getElementById('reset-section');
+    const pushSection = document.getElementById('push-section');
+    const switchSection = document.getElementById('switch-section');
+    const gitCommandDisplay = document.getElementById('git-command-display');
+    const copyGitCommandBtn = document.getElementById('copy-git-command');
+    const executeGitCommandBtn = document.getElementById('execute-git-command');
+    const gitOutput = document.getElementById('git-output');
+    
+    
+    const tagName = document.getElementById('tag-name');
+    const tagHash = document.getElementById('tag-hash');
+    const pushTag = document.getElementById('push-tag');
+    
+    
+    const resetTarget = document.getElementById('reset-target');
+    const customReset = document.getElementById('custom-reset');
+    const customResetPoint = document.getElementById('custom-reset-point');
+    
+    
+    const pushRemote = document.getElementById('push-remote');
+    const forcePush = document.getElementById('force-push');
+    
+    
+    const switchOperation = document.getElementById('switch-operation');
+    const branchName = document.getElementById('branch-name');
+    const branchLabel = document.getElementById('branch-label');
+    const createFrom = document.getElementById('create-from');
+    const createFromPoint = document.getElementById('create-from-point');
+    
     function updateFastapiCommand() {
       const apiPath = apiPathInput.value.trim();
       const mainFile = mainFileInput.value.trim();
@@ -403,7 +545,7 @@
       const port = portInput.value.trim();
       const reload = reloadCheckbox.checked ? '--reload' : '';
       
-      // Only include "cd apiPath &&" if apiPath is not empty
+      
       const cdCommand = apiPath ? `cd ${apiPath} && ` : '';
       
       fastapiCommandDisplay.textContent = `${cdCommand}uvicorn ${mainFile}:${appVar} ${reload} --host ${host} --port ${port}`.replace(/\s+/g, ' ').trim();
@@ -425,19 +567,23 @@
       ipcRenderer.send('execute-command', fastapiCommandDisplay.textContent);
     });
     
-    // IPC handlers
+    
     ipcRenderer.on('command-result', (event, result) => {
       if (result.error) {
         if (document.getElementById('tree-tab').classList.contains('active')) {
           treeOutput.textContent = 'Error: ' + result.error;
-        } else {
+        } else if (document.getElementById('fastapi-tab').classList.contains('active')) {
           fastapiOutput.textContent = 'Error: ' + result.error;
+        } else {
+          gitOutput.textContent = 'Error: ' + result.error;
         }
       } else {
         if (document.getElementById('tree-tab').classList.contains('active')) {
           treeOutput.textContent = result.output;
-        } else {
+        } else if (document.getElementById('fastapi-tab').classList.contains('active')) {
           fastapiOutput.textContent = result.output;
+        } else {
+          gitOutput.textContent = result.output;
         }
       }
     });
@@ -445,19 +591,124 @@
     ipcRenderer.on('clipboard-copied', () => {
       if (document.getElementById('tree-tab').classList.contains('active')) {
         treeOutput.textContent = 'Command copied to clipboard!';
-      } else {
+      } else if (document.getElementById('fastapi-tab').classList.contains('active')) {
         fastapiOutput.textContent = 'Command copied to clipboard!';
+      } else {
+        gitOutput.textContent = 'Command copied to clipboard!';
       }
       setTimeout(() => {
         if (document.getElementById('tree-tab').classList.contains('active')) {
           treeOutput.textContent = '';
-        } else {
+        } else if (document.getElementById('fastapi-tab').classList.contains('active')) {
           fastapiOutput.textContent = '';
+        } else {
+          gitOutput.textContent = '';
         }
       }, 2000);
     });
     
-    // Initialize command displays
+    
+    gitOperation.addEventListener('change', () => {
+      const operation = gitOperation.value;
+      
+      tagSection.style.display = 'none';
+      resetSection.style.display = 'none';
+      pushSection.style.display = 'none';
+      switchSection.style.display = 'none';
+      
+      if (operation === 'tag') {
+        tagSection.style.display = 'block';
+      } else if (operation === 'reset') {
+        resetSection.style.display = 'block';
+      } else if (operation === 'push') {
+        pushSection.style.display = 'block';
+      } else if (operation === 'switch') {
+        switchSection.style.display = 'block';
+      }
+      
+      updateGitCommand();
+    });
+    
+    
+    resetTarget.addEventListener('change', () => {
+      customReset.style.display = resetTarget.value === 'custom' ? 'block' : 'none';
+      updateGitCommand();
+    });
+    
+    
+    switchOperation.addEventListener('change', () => {
+      createFrom.style.display = switchOperation.value === 'create' ? 'block' : 'none';
+      branchLabel.textContent = switchOperation.value === 'create' ? 'New Branch Name:' : 'Branch Name:';
+      updateGitCommand();
+    });
+    
+    
+    [tagName, tagHash, pushTag, resetTarget, customResetPoint, 
+     pushRemote, forcePush, switchOperation, branchName, createFromPoint].forEach(element => {
+      if (element) {
+        if (element.type === 'checkbox') {
+          element.addEventListener('change', updateGitCommand);
+        } else {
+          element.addEventListener('input', updateGitCommand);
+        }
+      }
+    });
+    
+    
+    copyGitCommandBtn.addEventListener('click', () => {
+      ipcRenderer.send('copy-to-clipboard', gitCommandDisplay.textContent);
+    });
+    
+    executeGitCommandBtn.addEventListener('click', () => {
+      gitOutput.textContent = 'Executing command...';
+      ipcRenderer.send('execute-command', gitCommandDisplay.textContent);
+    });
+    
+    
+    function updateGitCommand() {
+      const operation = gitOperation.value;
+      let command = '';
+      
+      if (operation === 'tag') {
+        
+        const name = tagName.value.trim() || 'v1.0.0';
+        const hash = tagHash.value.trim();
+        const pushTagCmd = pushTag.checked ? ` && git push origin ${name}` : '';
+        
+        command = `git tag -a ${name} ${hash} -m "Version ${name}"${pushTagCmd}`;
+      } else if (operation === 'reset') {
+        
+        let target = resetTarget.value;
+        if (target === 'custom') {
+          target = customResetPoint.value.trim() || 'HEAD~1';
+        }
+        
+        command = `git reset --hard ${target}`;
+      } else if (operation === 'push') {
+        
+        const remote = pushRemote.value.trim() || 'origin';
+        const force = forcePush.checked ? '+' : '';
+        
+        command = `git push ${remote} ${force}HEAD`;
+      } else if (operation === 'switch') {
+        
+        const operation = switchOperation.value;
+        const branch = branchName.value.trim() || 'main';
+        
+        if (operation === 'existing') {
+          command = `git switch ${branch}`;
+        } else {
+          const from = createFromPoint.value.trim();
+          const fromOption = from ? ` --track -c ${branch} ${from}` : ` -c ${branch}`;
+          
+          command = `git switch${fromOption}`;
+        }
+      }
+      
+      gitCommandDisplay.textContent = command;
+    }
+    
+    
     updateTreeCommand();
     updateFastapiCommand();
   </script>
