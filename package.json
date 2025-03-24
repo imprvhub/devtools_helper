@@ -1,0 +1,41 @@
+{
+    "name": "dev-tools-helper",
+    "version": "1.0.0",
+    "description": "Helper application for developers to execute common commands",
+    "main": "main.js",
+    "scripts": {
+      "start": "electron .",
+      "build": "electron-builder",
+      "package-mac": "electron-builder --mac",
+      "package-win": "electron-builder --win",
+      "package-linux": "electron-builder --linux"
+    },
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+      "electron": "^28.0.0",
+      "electron-builder": "^24.6.3"
+    },
+    "build": {
+      "appId": "com.devtools.helper",
+      "productName": "DevTools Helper",
+      "mac": {
+        "category": "public.app-category.developer-tools",
+        "icon": "MyIcon.iconset/favicon-192.png",
+        "darkModeSupport": true
+      },
+      "win": {
+        "icon": "MyIcon.iconset/favicon.ico"
+      },
+      "linux": {
+        "icon": "MyIcon.iconset/favicon-192.png"
+      },
+      "directories": {
+        "output": "dist"
+      },
+      "files": [
+        "**/*",
+        "MyIcon.iconset/**"
+      ]
+    }
+  }

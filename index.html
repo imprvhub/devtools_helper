@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DevTools Helper</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 20px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+    }
+    
+    .container {
+      background-color: #2d2d2d;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1, h2 {
+      color: #e0e0e0;
+      margin-bottom: 20px;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .tab.active {
+      border-bottom: 2px solid #0095ff;
+      color: #0095ff;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background-color: #383838;
+      color: #e0e0e0;
+    }
+    
+    button {
+      background-color: #0095ff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #0077cc;
+    }
+    
+    .exclusions {
+      margin-top: 10px;
+    }
+    
+    .exclusion-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    
+    .remove-btn {
+      background-color: #ff3b30;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      margin-left: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    
+    .output {
+      background-color: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      color: #0af;
+    }
+    
+    .command-display {
+      background-color: #2d2d2d;
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DevTools Helper</h1>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="tree">Tree Command</div>
+      <div class="tab" data-tab="fastapi">FastAPI</div>
+    </div>
+    
+    <div class="tab-content active" id="tree-tab">
+      <h2>Tree Command Generator</h2>
+      
+      <div class="form-group">
+        <label>Directory Path (leave empty for current):</label>
+        <input type="text" id="tree-path" placeholder="/path/to/directory">
+      </div>
+      
+      <div class="form-group">
+        <label>Common Exclusions:</label>
+        <div class="exclusions" id="tree-exclusions">
+          <div class="exclusion-item">
+            <input type="text" value="node_modules">
+            <button class="remove-btn">×</button>
+          </div>
+          <div class="exclusion-item">
+            <input type="text" value=".git">
+            <button class="remove-btn">×</button>
+          </div>
+          <div class="exclusion-item">
+            <input type="text" value="__pycache__">
+            <button class="remove-btn">×</button>
+          </div>
+          <div class="exclusion-item">
+            <input type="text" value="venv">
+            <button class="remove-btn">×</button>
+          </div>
+          <div class="exclusion-item">
+            <input type="text" value=".vercel">
+            <button class="remove-btn">×</button>
+          </div>
+          <div class="exclusion-item">
+            <input type="text" value=".astro">
+            <button class="remove-btn">×</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Save Common Exclusions:</label>
+        <div style="display: flex; gap: 10px;">
+          <button id="save-exclusions">Save as Common Exclusions</button>
+          <button id="reset-exclusions">Reset to Default</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Add Custom Exclusion:</label>
+        <div style="display: flex;">
+          <input type="text" id="new-exclusion" placeholder="Enter folder name">
+          <button id="add-exclusion" style="margin-left: 10px;">Add</button>
+        </div>
+      </div>
+      
+      <div class="command-display" id="tree-command-display">tree -I "node_modules|.git|__pycache__|venv|.vercel|.astro"</div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button id="copy-tree-command">Copy Command</button>
+        <button id="execute-tree-command">Execute Command</button>
+      </div>
+      
+      <div class="output" id="tree-output"></div>
+    </div>
+    
+    <div class="tab-content" id="fastapi-tab">
+      <h2>FastAPI Runner</h2>
+      
+      <div class="form-group">
+        <label>API Directory:</label>
+        <input type="text" id="api-path" value="api">
+      </div>
+      
+      <div class="form-group">
+        <label>Main File:</label>
+        <input type="text" id="main-file" value="index">
+      </div>
+      
+      <div class="form-group">
+        <label>App Variable:</label>
+        <input type="text" id="app-var" value="app">
+      </div>
+      
+      <div class="form-group">
+        <label>Host:</label>
+        <input type="text" id="host" value="0.0.0.0">
+      </div>
+      
+      <div class="form-group">
+        <label>Port:</label>
+        <input type="number" id="port" value="8000">
+      </div>
+      
+      <div class="form-group">
+        <label>Options:</label>
+        <div>
+          <input type="checkbox" id="reload" checked>
+          <label for="reload" style="display: inline;">--reload</label>
+        </div>
+      </div>
+      
+      <div class="command-display" id="fastapi-command-display">cd api && uvicorn index:app --reload --host 0.0.0.0 --port 8000</div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button id="copy-fastapi-command">Copy Command</button>
+        <button id="execute-fastapi-command">Execute Command</button>
+      </div>
+      
+      <div class="output" id="fastapi-output"></div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.dataset.tab;
+        
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(tabId + '-tab').classList.add('active');
+      });
+    });
+    
+    // Tree command functionality
+    const treePathInput = document.getElementById('tree-path');
+    const treeExclusions = document.getElementById('tree-exclusions');
+    const newExclusionInput = document.getElementById('new-exclusion');
+    const addExclusionBtn = document.getElementById('add-exclusion');
+    const treeCommandDisplay = document.getElementById('tree-command-display');
+    const copyTreeCommandBtn = document.getElementById('copy-tree-command');
+    const executeTreeCommandBtn = document.getElementById('execute-tree-command');
+    const treeOutput = document.getElementById('tree-output');
+    const saveExclusionsBtn = document.getElementById('save-exclusions');
+    const resetExclusionsBtn = document.getElementById('reset-exclusions');
+    
+    function updateTreeCommand() {
+      const path = treePathInput.value.trim();
+      const exclusions = [];
+      
+      document.querySelectorAll('#tree-exclusions .exclusion-item input').forEach(item => {
+        exclusions.push(item.value);
+      });
+      
+      const exclusionStr = exclusions.length > 0 ? `-I "${exclusions.join('|')}"` : '';
+      
+      treeCommandDisplay.textContent = `tree ${path} ${exclusionStr}`.trim();
+    }
+    
+    treePathInput.addEventListener('input', updateTreeCommand);
+    
+    function createExclusionItem(value) {
+      const div = document.createElement('div');
+      div.className = 'exclusion-item';
+      
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = value;
+      input.addEventListener('input', updateTreeCommand);
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => {
+        div.remove();
+        updateTreeCommand();
+      });
+      
+      div.appendChild(input);
+      div.appendChild(removeBtn);
+      
+      return div;
+    }
+    
+    addExclusionBtn.addEventListener('click', () => {
+      const newValue = newExclusionInput.value.trim();
+      if (newValue) {
+        treeExclusions.appendChild(createExclusionItem(newValue));
+        newExclusionInput.value = '';
+        updateTreeCommand();
+      }
+    });
+    
+    document.querySelectorAll('#tree-exclusions .remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.parentElement.remove();
+        updateTreeCommand();
+      });
+    });
+    
+    document.querySelectorAll('#tree-exclusions input').forEach(input => {
+      input.addEventListener('input', updateTreeCommand);
+    });
+    
+    // Save and load exclusions
+    const DEFAULT_EXCLUSIONS = ['node_modules', '.git', '__pycache__', 'venv', '.vercel', '.astro'];
+    
+    saveExclusionsBtn.addEventListener('click', () => {
+      const exclusions = [];
+      document.querySelectorAll('#tree-exclusions .exclusion-item input').forEach(item => {
+        exclusions.push(item.value);
+      });
+      localStorage.setItem('commonExclusions', JSON.stringify(exclusions));
+      treeOutput.textContent = 'Common exclusions saved!';
+      setTimeout(() => {
+        treeOutput.textContent = '';
+      }, 2000);
+    });
+    
+    resetExclusionsBtn.addEventListener('click', () => {
+      treeExclusions.innerHTML = '';
+      DEFAULT_EXCLUSIONS.forEach(excl => {
+        treeExclusions.appendChild(createExclusionItem(excl));
+      });
+      updateTreeCommand();
+      localStorage.removeItem('commonExclusions');
+    });
+    
+    // Load saved exclusions on startup
+    try {
+      const savedExclusions = localStorage.getItem('commonExclusions');
+      if (savedExclusions) {
+        const exclusions = JSON.parse(savedExclusions);
+        treeExclusions.innerHTML = '';
+        exclusions.forEach(excl => {
+          treeExclusions.appendChild(createExclusionItem(excl));
+        });
+        updateTreeCommand();
+      }
+    } catch (e) {
+      console.error('Error loading saved exclusions:', e);
+    }
+    
+    copyTreeCommandBtn.addEventListener('click', () => {
+      ipcRenderer.send('copy-to-clipboard', treeCommandDisplay.textContent);
+    });
+    
+    executeTreeCommandBtn.addEventListener('click', () => {
+      treeOutput.textContent = 'Executing command...';
+      ipcRenderer.send('execute-command', treeCommandDisplay.textContent);
+    });
+    
+    // FastAPI command functionality
+    const apiPathInput = document.getElementById('api-path');
+    const mainFileInput = document.getElementById('main-file');
+    const appVarInput = document.getElementById('app-var');
+    const hostInput = document.getElementById('host');
+    const portInput = document.getElementById('port');
+    const reloadCheckbox = document.getElementById('reload');
+    const fastapiCommandDisplay = document.getElementById('fastapi-command-display');
+    const copyFastapiCommandBtn = document.getElementById('copy-fastapi-command');
+    const executeFastapiCommandBtn = document.getElementById('execute-fastapi-command');
+    const fastapiOutput = document.getElementById('fastapi-output');
+    
+    function updateFastapiCommand() {
+      const apiPath = apiPathInput.value.trim();
+      const mainFile = mainFileInput.value.trim();
+      const appVar = appVarInput.value.trim();
+      const host = hostInput.value.trim();
+      const port = portInput.value.trim();
+      const reload = reloadCheckbox.checked ? '--reload' : '';
+      
+      // Only include "cd apiPath &&" if apiPath is not empty
+      const cdCommand = apiPath ? `cd ${apiPath} && ` : '';
+      
+      fastapiCommandDisplay.textContent = `${cdCommand}uvicorn ${mainFile}:${appVar} ${reload} --host ${host} --port ${port}`.replace(/\s+/g, ' ').trim();
+    }
+    
+    apiPathInput.addEventListener('input', updateFastapiCommand);
+    mainFileInput.addEventListener('input', updateFastapiCommand);
+    appVarInput.addEventListener('input', updateFastapiCommand);
+    hostInput.addEventListener('input', updateFastapiCommand);
+    portInput.addEventListener('input', updateFastapiCommand);
+    reloadCheckbox.addEventListener('change', updateFastapiCommand);
+    
+    copyFastapiCommandBtn.addEventListener('click', () => {
+      ipcRenderer.send('copy-to-clipboard', fastapiCommandDisplay.textContent);
+    });
+    
+    executeFastapiCommandBtn.addEventListener('click', () => {
+      fastapiOutput.textContent = 'Executing command...';
+      ipcRenderer.send('execute-command', fastapiCommandDisplay.textContent);
+    });
+    
+    // IPC handlers
+    ipcRenderer.on('command-result', (event, result) => {
+      if (result.error) {
+        if (document.getElementById('tree-tab').classList.contains('active')) {
+          treeOutput.textContent = 'Error: ' + result.error;
+        } else {
+          fastapiOutput.textContent = 'Error: ' + result.error;
+        }
+      } else {
+        if (document.getElementById('tree-tab').classList.contains('active')) {
+          treeOutput.textContent = result.output;
+        } else {
+          fastapiOutput.textContent = result.output;
+        }
+      }
+    });
+    
+    ipcRenderer.on('clipboard-copied', () => {
+      if (document.getElementById('tree-tab').classList.contains('active')) {
+        treeOutput.textContent = 'Command copied to clipboard!';
+      } else {
+        fastapiOutput.textContent = 'Command copied to clipboard!';
+      }
+      setTimeout(() => {
+        if (document.getElementById('tree-tab').classList.contains('active')) {
+          treeOutput.textContent = '';
+        } else {
+          fastapiOutput.textContent = '';
+        }
+      }, 2000);
+    });
+    
+    // Initialize command displays
+    updateTreeCommand();
+    updateFastapiCommand();
+  </script>
+</body>
+</html>
